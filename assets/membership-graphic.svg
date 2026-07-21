@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">AMSA at NYU membership graphic</title>
+  <desc id="desc">A purple and teal abstract membership card graphic with medical and student community symbols.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#26013f"/>
+      <stop offset="0.48" stop-color="#57068c"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f4eefc"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="28" stdDeviation="28" flood-color="#12051e" flood-opacity="0.34"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1320" cy="130" r="270" fill="#ffffff" opacity="0.1"/>
+  <circle cx="134" cy="778" r="330" fill="#ffffff" opacity="0.08"/>
+  <path d="M0 646 C245 548 407 704 627 604 C868 494 956 264 1212 288 C1370 303 1482 384 1600 336 L1600 900 L0 900 Z" fill="#ffffff" opacity="0.1"/>
+  <path d="M1098 86 L1512 86 L1512 500 C1407 462 1296 461 1184 497 C1127 516 1085 538 1048 560 Z" fill="#f5b700" opacity="0.26"/>
+
+  <g filter="url(#shadow)">
+    <rect x="220" y="170" width="760" height="500" rx="34" fill="url(#card)"/>
+    <rect x="220" y="170" width="760" height="118" rx="34" fill="#57068c"/>
+    <path d="M220 254 L220 204 C220 185 235 170 254 170 L980 170 L980 254 Z" fill="#6d20a5"/>
+    <circle cx="315" cy="228" r="28" fill="#ffffff" opacity="0.9"/>
+    <path d="M306 227 h18 M315 218 v18" stroke="#57068c" stroke-width="8" stroke-linecap="round"/>
+    <text x="370" y="240" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="44" font-weight="800">AMSA at NYU</text>
+    <text x="285" y="374" fill="#16171a" font-family="Inter, Arial, sans-serif" font-size="60" font-weight="900">Membership</text>
+    <text x="285" y="425" fill="#626874" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700">Access request and payment review</text>
+    <rect x="285" y="492" width="245" height="28" rx="14" fill="#d9dde5"/>
+    <rect x="285" y="548" width="365" height="28" rx="14" fill="#d9dde5"/>
+    <rect x="285" y="604" width="295" height="28" rx="14" fill="#d9dde5"/>
+    <rect x="710" y="470" width="184" height="132" rx="22" fill="url(#accent)"/>
+    <path d="M751 535 l32 32 l70 -78" fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1015" y="285" width="360" height="360" rx="34" fill="#ffffff"/>
+    <circle cx="1195" cy="414" r="92" fill="#f4eefc"/>
+    <path d="M1195 343 c45 40 67 76 67 112 c0 45 -31 77 -67 77 c-36 0 -67 -32 -67 -77 c0 -36 22 -72 67 -112z" fill="#57068c"/>
+    <path d="M1161 440 c26 18 43 18 68 0" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+    <path d="M1112 574 h166" stroke="#0f766e" stroke-width="24" stroke-linecap="round"/>
+    <path d="M1144 620 h102" stroke="#f5b700" stroke-width="20" stroke-linecap="round"/>
+  </g>
+
+  <g opacity="0.9">
+    <circle cx="1110" cy="180" r="12" fill="#ffffff"/>
+    <circle cx="1170" cy="148" r="8" fill="#ffffff"/>
+    <circle cx="1254" cy="208" r="14" fill="#ffffff"/>
+    <circle cx="1010" cy="706" r="10" fill="#ffffff"/>
+    <circle cx="1102" cy="744" r="14" fill="#ffffff"/>
+    <circle cx="1405" cy="686" r="9" fill="#ffffff"/>
+  </g>
+</svg>

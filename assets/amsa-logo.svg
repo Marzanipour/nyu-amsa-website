@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 168" role="img" aria-labelledby="title desc">
+  <title id="title">AMSA at NYU</title>
+  <desc id="desc">AMSA at NYU wordmark with a medical cross icon.</desc>
+  <rect width="520" height="168" rx="24" fill="rgba(255,255,255,.94)"/>
+  <circle cx="76" cy="84" r="44" fill="#57068c"/>
+  <path d="M68 49h16v27h27v16H84v27H68V92H41V76h27V49Z" fill="#fff"/>
+  <path d="M150 112 183 51h18l33 61h-19l-6-12h-35l-6 12h-18Zm31-27h21l-10-20-11 20ZM242 112V51h18l22 31 22-31h18v61h-18V78l-17 24h-10l-17-24v34h-18ZM337 103l10-13c7 6 16 9 25 9 7 0 11-2 11-6 0-5-5-6-18-9-17-4-26-10-26-25 0-14 12-23 31-23 13 0 24 4 32 11l-10 13c-7-5-15-8-23-8-6 0-10 2-10 6 0 5 5 6 18 9 18 4 26 11 26 25 0 15-12 24-32 24-14 0-26-4-34-13ZM407 112l33-61h18l33 61h-19l-6-12h-35l-6 12h-18Zm31-27h21l-10-20-11 20Z" fill="#17181c"/>
+  <path d="M151 133h130v7H151z" fill="#0f766e"/>
+  <path d="M294 133h72v7h-72z" fill="#57068c"/>
+  <text x="380" y="140" fill="#626874" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">at NYU</text>
+</svg>
