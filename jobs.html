@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AMSA at NYU Jobs</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-brand" href="index.html">
+        <span><strong>AMSA</strong> at NYU</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="index.html">About</a>
+        <a href="membership.html">Membership</a>
+        <a href="events.html">Events</a>
+        <a class="is-active" href="jobs.html">Jobs</a>
+      </nav>
+    </header>
+
+    <main class="directory-page">
+      <section class="directory-hero">
+        <p class="section-kicker">Opportunities</p>
+        <h1>Jobs</h1>
+        <p>
+          Research roles, clinical volunteering, campus jobs, internships, and
+          other pre-health opportunities can be posted here.
+        </p>
+      </section>
+
+      <section class="directory-toolbar" aria-label="Jobs update note">
+        <p>Edit <code>data/jobs.js</code> to add or update jobs.</p>
+      </section>
+
+      <section class="listing-grid" id="jobsList" aria-label="Jobs list"></section>
+    </main>
+
+    <script src="data/jobs.js"></script>
+    <script src="listing-page.js"></script>
+    <script>
+      renderListingPage({
+        targetId: "jobsList",
+        items: window.AMSA_JOBS,
+        emptyTitle: "Sorry, no jobs yet!",
+        emptyMessage: "Check back soon for research, clinical, campus, and pre-health opportunities.",
+        actionLabel: "Apply"
+      });
+    </script>
+  </body>
+</html>

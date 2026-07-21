@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AMSA at NYU Membership</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=membership-gap-3" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-brand" href="index.html">
+        <span><strong>AMSA</strong> at NYU</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="index.html">About</a>
+        <a class="is-active" href="membership.html">Membership</a>
+        <a href="events.html">Events</a>
+        <a href="jobs.html">Jobs</a>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="hero" aria-label="AMSA membership sign up">
+        <img class="hero__image" src="assets/organic-chem-whiteboard-bright-hero.png" alt="" />
+        <div class="hero__shade"></div>
+        <div class="hero__content">
+          <div class="hero__brand-row" aria-label="AMSA and NYU">
+            <img class="hero__logo hero__logo--nyu" src="assets/nyu-logo.png" alt="NYU" />
+          </div>
+          <p class="eyebrow hero__club-name"><span>AMSA</span> at NYU</p>
+          <h1>Membership Access</h1>
+          <p class="hero__copy">
+            Submit your NYU email, confirm your one-time payment, and AMSA will
+            send credentials after payment is reviewed.
+          </p>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Membership form and payment details">
+        <aside class="payment-panel">
+          <div>
+            <p class="section-kicker">One-time dues</p>
+            <h2>$25 membership payment</h2>
+            <p>
+              Send payment through Venmo or Zelle before submitting the form.
+              <strong class="required-note">* Include your full name in the payment note so AMSA can match it.</strong>
+              Your submission will be reviewed before credentials are sent.
+            </p>
+          </div>
+
+          <div class="payment-methods">
+            <div class="payment-method">
+              <span>Venmo</span>
+              <strong id="venmoHandle">@AMSA-NYU</strong>
+            </div>
+            <div class="payment-method">
+              <span>Zelle</span>
+              <strong id="zelleHandle">amsa@example.com</strong>
+            </div>
+          </div>
+
+          <p class="fine-print">
+            Replace the payment handles in <code>config.js</code> before sharing
+            this page.
+          </p>
+        </aside>
+
+        <form class="signup-form" id="signupForm">
+          <div class="form-header">
+            <p class="section-kicker">Student details</p>
+            <h2>Request access</h2>
+          </div>
+
+          <label>
+            <span>Full name</span>
+            <input
+              id="fullName"
+              name="fullName"
+              type="text"
+              autocomplete="name"
+              placeholder="Jane Doe"
+              required
+            />
+          </label>
+
+          <label>
+            <span>NYU email</span>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="xyz234@nyu.edu"
+              pattern="^[A-Za-z0-9._%+-]+@nyu\.edu$"
+              required
+            />
+          </label>
+
+          <label>
+            <span>Phone number</span>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              autocomplete="tel"
+              placeholder="555-123-4567"
+              required
+            />
+          </label>
+
+          <fieldset>
+            <legend>Payment method</legend>
+            <div class="segmented">
+              <label>
+                <input type="radio" name="paymentMethod" value="Venmo" checked />
+                <span>Venmo</span>
+              </label>
+              <label>
+                <input type="radio" name="paymentMethod" value="Zelle" />
+                <span>Zelle</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <label>
+            <span>Payment note or username</span>
+            <input
+              id="paymentNote"
+              name="paymentNote"
+              type="text"
+              placeholder="Use the same full name from your payment note"
+            />
+          </label>
+
+          <label class="check-row">
+            <input id="paymentSent" name="paymentSent" type="checkbox" required />
+            <span><strong>✓ I have sent the one-time $25 payment and included my full name in the payment note.</strong></span>
+          </label>
+
+          <label class="check-row">
+            <input id="honestyPolicy" name="honestyPolicy" type="checkbox" required />
+            <span>I agree to follow the academic honesty policy.</span>
+          </label>
+
+          <button class="submit-button" type="submit">
+            <span>Submit for payment review</span>
+          </button>
+
+          <p class="status" id="formStatus" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
