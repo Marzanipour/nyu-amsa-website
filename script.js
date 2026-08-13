@@ -5,8 +5,8 @@ const statusEl = document.querySelector("#formStatus");
 const venmoHandle = document.querySelector("#venmoHandle");
 const zelleHandle = document.querySelector("#zelleHandle");
 
-venmoHandle.textContent = config.venmoHandle || "@AMSA-NYU";
-zelleHandle.textContent = config.zelleHandle || "amsa@example.com";
+venmoHandle.textContent = config.venmoHandle || "@edward_novodvorsky";
+zelleHandle.textContent = config.zelleHandle || "347-705-4391";
 
 function setStatus(message, type = "") {
   statusEl.textContent = message;
