@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AMSA at NYU Attendance</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-brand" href="index.html">
+        <span><strong>AMSA</strong> at NYU</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="index.html">About</a>
+        <a href="membership.html">Membership</a>
+        <a href="events.html">Events</a>
+        <a class="is-active" href="attendance.html">Attendance</a>
+      </nav>
+    </header>
+
+    <main class="attendance-page">
+      <section class="attendance-intro">
+        <div>
+          <p class="section-kicker">In-room check-in</p>
+          <h1>Record your attendance.</h1>
+          <p>
+            An AMSA officer will display a temporary event code in the room.
+            Enter it below before the check-in window closes.
+          </p>
+        </div>
+        <aside class="attendance-rule" aria-label="How attendance check-in works">
+          <strong>One check-in per event</strong>
+          <p>
+            Use your own NYU email. Codes expire automatically and duplicate
+            submissions do not count twice.
+          </p>
+        </aside>
+      </section>
+
+      <section class="attendance-workspace" aria-label="Event attendance form">
+        <div class="attendance-steps">
+          <p class="section-kicker">Before you check in</p>
+          <ol>
+            <li>Be physically present at the AMSA event.</li>
+            <li>Find the temporary code displayed by the officer.</li>
+            <li>Enter your name and NYU email exactly as used for membership.</li>
+          </ol>
+          <p class="attendance-note">
+            Your email is matched against the membership list so AMSA can track
+            dues status and event participation in the same Google Sheet.
+          </p>
+        </div>
+
+        <form class="signup-form attendance-form" id="attendanceForm">
+          <div class="form-header">
+            <p class="section-kicker">Current event</p>
+            <h2>Check in</h2>
+          </div>
+
+          <label>
+            <span>Full name</span>
+            <input
+              id="attendanceName"
+              name="fullName"
+              type="text"
+              autocomplete="name"
+              placeholder="Jane Doe"
+              required
+            />
+          </label>
+
+          <label>
+            <span>NYU email</span>
+            <input
+              id="attendanceEmail"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="xyz234@nyu.edu"
+              pattern="^[A-Za-z0-9._%+-]+@nyu\.edu$"
+              required
+            />
+          </label>
+
+          <label>
+            <span>Event code</span>
+            <input
+              id="attendanceCode"
+              name="eventCode"
+              class="event-code-input"
+              type="text"
+              inputmode="text"
+              autocomplete="one-time-code"
+              autocapitalize="characters"
+              maxlength="8"
+              placeholder="AB12CD"
+              required
+            />
+          </label>
+
+          <label class="check-row">
+            <input id="inRoom" name="inRoom" type="checkbox" required />
+            <span>I confirm that I am physically present at this AMSA event.</span>
+          </label>
+
+          <button class="submit-button" type="submit">
+            <span>Record attendance</span>
+          </button>
+
+          <p class="status" id="attendanceStatus" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="config.js"></script>
+    <script src="attendance.js"></script>
+  </body>
+</html>

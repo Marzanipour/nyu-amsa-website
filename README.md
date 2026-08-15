@@ -11,6 +11,9 @@ This is a simple membership access website for AMSA at NYU.
 - Sends the submission to a Google Sheet as `Pending`.
 - Emails the AMSA admin that a payment needs review.
 - Sends the student the credential email only after a row is marked `Approved`.
+- Records event attendance using short-lived in-room codes.
+- Matches each check-in to membership and payment status by NYU email.
+- Maintains a `Member Summary` tab with payment status and unique events attended.
 
 ## Important payment note
 
@@ -68,14 +71,14 @@ There are two ways to send credentials after checking Venmo/Zelle.
 - `index.html`: public About landing page.
 - `membership.html`: public sign-up and membership payment page.
 - `events.html`: public events page.
-- `jobs.html`: public jobs page.
+- `attendance.html`: public, code-protected event check-in page.
 - `styles.css`: page design.
 - `script.js`: form validation and submission.
-- `listing-page.js`: renders event and job cards from data files.
+- `attendance.js`: validates and submits attendance check-ins.
+- `listing-page.js`: renders event cards from the event data file.
 - `config.js`: public settings.
 - `data/events.js`: editable event list.
-- `data/jobs.js`: editable job/opportunity list.
-- `backend/google-apps-script.js`: Google Sheets and email backend.
+- `backend/google-apps-script.js`: Google Sheets, email, and attendance backend.
 - `assets/amsa-study-hero.png`: generated hero image for the site.
 
 ## Update events
@@ -99,22 +102,17 @@ window.AMSA_EVENTS = [
 ];
 ```
 
-## Update jobs
+## Run event attendance
 
-Edit `data/jobs.js`.
+After replacing the Apps Script code and updating the existing deployment:
 
-Example:
+1. Refresh the Google Sheet.
+2. Choose **AMSA Membership > Open attendance check-in**.
+3. Enter the event name and the number of minutes the code should remain active. Fifteen minutes is recommended.
+4. Display the new `Attendance Control` tab in the room.
+5. Students open the website's **Attendance** page and enter the displayed room code with their name and NYU email.
+6. Choose **AMSA Membership > Close attendance check-in** when the window is over.
 
-```js
-window.AMSA_JOBS = [
-  {
-    title: "Research Assistant",
-    type: "Research",
-    date: "Posted September 1, 2026",
-    location: "NYU Langone",
-    description: "Part-time research support role for students interested in clinical research.",
-    tags: ["Research", "Part-time"],
-    link: "https://example.com"
-  }
-];
-```
+The backend rejects expired or incorrect codes and prevents the same NYU email from checking into an event twice. The `Attendance` tab stores the event and membership match. The `Member Summary` tab combines each student's payment status and count of unique events attended.
+
+No browser-only method can absolutely prove physical presence: location can be spoofed, browsers cannot inspect the NYU Wi-Fi name, and a student could share a code. A code shown only in the room for a short window is the best low-friction option for this site. For higher-stakes attendance, an officer should also visually supervise check-in or display the code near the end of the event.

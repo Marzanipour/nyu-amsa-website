@@ -741,6 +741,110 @@ fieldset {
   box-shadow: 0 16px 36px rgba(17, 24, 39, 0.08);
 }
 
+.attendance-page {
+  min-height: calc(100vh - 72px);
+  padding: 64px 0 80px;
+  background:
+    linear-gradient(140deg, rgba(87, 6, 140, 0.1), transparent 34%),
+    linear-gradient(315deg, rgba(15, 118, 110, 0.1), transparent 32%),
+    #f7f7f5;
+}
+
+.attendance-intro,
+.attendance-workspace {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.attendance-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+  gap: 28px;
+  align-items: end;
+  margin-bottom: 30px;
+}
+
+.attendance-intro h1 {
+  max-width: 780px;
+  font-size: clamp(3rem, 7vw, 6rem);
+}
+
+.attendance-intro > div > p:last-child {
+  max-width: 680px;
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.attendance-rule {
+  padding: 22px;
+  border-top: 6px solid var(--gold);
+  border-radius: 8px;
+  color: #fff;
+  background: var(--violet-dark);
+  box-shadow: var(--shadow);
+}
+
+.attendance-rule strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 1.12rem;
+}
+
+.attendance-rule p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.55;
+}
+
+.attendance-workspace {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.78fr) minmax(320px, 1.22fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.attendance-steps {
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 16px 36px rgba(17, 24, 39, 0.08);
+}
+
+.attendance-steps ol {
+  margin: 0;
+  padding-left: 1.3rem;
+  color: #30343b;
+}
+
+.attendance-steps li {
+  padding: 8px 0 8px 6px;
+  line-height: 1.5;
+}
+
+.attendance-note {
+  margin: 22px 0 0;
+  padding: 15px;
+  border-left: 5px solid var(--teal);
+  background: #eef7f6;
+  color: #23403d;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.attendance-form {
+  box-shadow: var(--shadow);
+}
+
+.event-code-input {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
 .listing-card {
   display: flex;
   flex-direction: column;
@@ -878,6 +982,15 @@ fieldset {
   .about-connect {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .attendance-intro,
+  .attendance-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-page {
+    padding-top: 44px;
   }
 
   .connect-links {

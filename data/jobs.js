@@ -1,1 +1,0 @@
-window.AMSA_JOBS = [];
