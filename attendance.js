@@ -13,44 +13,38 @@ function setAttendanceStatus(message, type = "") {
   attendanceStatus.className = `status${type ? ` is-${type}` : ""}`;
 }
 
-function submitAttendance(payload) {
-  return new Promise((resolve, reject) => {
-    const callbackName = `amsaAttendance_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2)}`;
-    const script = document.createElement("script");
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error("Attendance check-in timed out."));
-    }, 15000);
-
-    function cleanup() {
-      window.clearTimeout(timeout);
-      delete window[callbackName];
-      script.remove();
-    }
-
-    window[callbackName] = (response) => {
-      cleanup();
-      resolve(response);
-    };
-
-    script.onerror = () => {
-      cleanup();
-      reject(new Error("Attendance service could not be reached."));
-    };
-
-    const params = new URLSearchParams({
-      action: "attendance",
-      callback: callbackName,
-      fullName: payload.fullName,
-      email: payload.email,
-      eventCode: payload.eventCode
-    });
-
-    script.src = `${attendanceConfig.googleScriptUrl}?${params.toString()}`;
-    document.body.appendChild(script);
+async function submitAttendance(payload) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 15000);
+  const params = new URLSearchParams({
+    action: "attendance",
+    fullName: payload.fullName,
+    email: payload.email,
+    eventCode: payload.eventCode
   });
+
+  try {
+    const response = await fetch(
+      `${attendanceConfig.googleScriptUrl}?${params.toString()}`,
+      {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Attendance service could not be reached.");
+    }
+    return await response.json();
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("Attendance check-in timed out.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 attendanceForm.addEventListener("submit", async (event) => {

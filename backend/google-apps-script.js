@@ -133,7 +133,7 @@ function doPost(event) {
 
 function doGet(event) {
   const callback = String(event.parameter.callback || "").trim();
-  if (!/^[A-Za-z_$][0-9A-Za-z_$]*$/.test(callback)) {
+  if (callback && !/^[A-Za-z_$][0-9A-Za-z_$]*$/.test(callback)) {
     return ContentService
       .createTextOutput("Invalid callback")
       .setMimeType(ContentService.MimeType.TEXT);
@@ -149,9 +149,13 @@ function doGet(event) {
     result = { ok: false, error: error.message };
   }
 
-  return ContentService
-    .createTextOutput(`${callback}(${JSON.stringify(result)});`)
-    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  if (callback) {
+    return ContentService
+      .createTextOutput(`${callback}(${JSON.stringify(result)});`)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  return jsonResponse(result);
 }
 
 function openAttendanceCheckIn() {
