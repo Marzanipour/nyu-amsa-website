@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=membership-gap-3" />
+    <link rel="stylesheet" href="styles.css?v=tiers-1" />
   </head>
   <body>
     <header class="site-header">
@@ -23,6 +23,7 @@
         <a class="is-active" href="membership.html">Membership</a>
         <a href="events.html">Events</a>
         <a href="attendance.html">Attendance</a>
+        <a href="tiers.html">Tier System</a>
       </nav>
     </header>
 
@@ -37,8 +38,8 @@
           <p class="eyebrow hero__club-name"><span>AMSA</span> at NYU</p>
           <h1>Membership Access</h1>
           <p class="hero__copy">
-            Submit your NYU email, confirm your one-time payment, and AMSA will
-            send credentials after payment is reviewed.
+            Join AMSA for free and build attendance toward Tier I. Submit the
+            one-time dues whenever you are ready to qualify for Tier II.
           </p>
         </div>
       </section>
@@ -46,12 +47,14 @@
       <section class="workspace" aria-label="Membership form and payment details">
         <aside class="payment-panel">
           <div>
-            <p class="section-kicker">One-time dues</p>
-            <h2>$25 membership payment</h2>
+            <p class="section-kicker">Two ways to join</p>
+            <h2>Start free or submit $25 dues</h2>
             <p>
-              Send payment through Venmo or Zelle before submitting the form.
-              <strong class="required-note">* Include your full name in the payment note so AMSA can match it.</strong>
-              Your submission will be reviewed before credentials are sent.
+              Joining AMSA does not require payment. Attend three events after
+              joining to reach Tier I. To qualify for Tier II, attend three
+              events and submit the one-time $25 dues.
+              <strong class="required-note">If paying now, include your full name in the payment note so AMSA can match it.</strong>
+              Dues are reviewed before Tier II access is approved.
             </p>
           </div>
 
@@ -71,8 +74,22 @@
         <form class="signup-form" id="signupForm">
           <div class="form-header">
             <p class="section-kicker">Student details</p>
-            <h2>Request access</h2>
+            <h2>Join or upgrade</h2>
           </div>
+
+          <fieldset>
+            <legend>Membership path</legend>
+            <div class="segmented membership-path">
+              <label>
+                <input type="radio" name="membershipTrack" value="free" checked />
+                <span>Join free</span>
+              </label>
+              <label>
+                <input type="radio" name="membershipTrack" value="paid" />
+                <span>Join + submit dues</span>
+              </label>
+            </div>
+          </fieldset>
 
           <label>
             <span>Full name</span>
@@ -111,7 +128,7 @@
             />
           </label>
 
-          <fieldset>
+          <fieldset class="payment-only" id="paymentFields" hidden>
             <legend>Payment method</legend>
             <div class="segmented">
               <label>
@@ -125,7 +142,7 @@
             </div>
           </fieldset>
 
-          <label>
+          <label class="payment-only" id="paymentNoteField" hidden>
             <span>Payment note or username</span>
             <input
               id="paymentNote"
@@ -135,8 +152,8 @@
             />
           </label>
 
-          <label class="check-row">
-            <input id="paymentSent" name="paymentSent" type="checkbox" required />
+          <label class="check-row payment-only" id="paymentConfirmationField" hidden>
+            <input id="paymentSent" name="paymentSent" type="checkbox" />
             <span><strong>✓ I have sent the one-time $25 payment and included my full name in the payment note.</strong></span>
           </label>
 
@@ -146,7 +163,7 @@
           </label>
 
           <button class="submit-button" type="submit">
-            <span>Submit for payment review</span>
+            <span id="membershipSubmitLabel">Join AMSA</span>
           </button>
 
           <p class="status" id="formStatus" role="status" aria-live="polite"></p>
@@ -155,6 +172,6 @@
     </main>
 
     <script src="config.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js?v=tiers-1"></script>
   </body>
 </html>

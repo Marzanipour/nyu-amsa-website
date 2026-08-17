@@ -14,6 +14,7 @@ This is a simple membership access website for AMSA at NYU.
 - Records event attendance using short-lived in-room codes.
 - Matches each check-in to membership and payment status by NYU email.
 - Maintains a `Member Summary` tab with payment status and unique events attended.
+- Calculates Tier I and Tier II automatically from membership, attendance, and approved dues.
 
 ## Important payment note
 
@@ -72,6 +73,7 @@ There are two ways to send credentials after checking Venmo/Zelle.
 - `membership.html`: public sign-up and membership payment page.
 - `events.html`: public events page.
 - `attendance.html`: public, code-protected event check-in page.
+- `tiers.html`: public explanation of Tier I and Tier II requirements and benefits.
 - `styles.css`: page design.
 - `script.js`: form validation and submission.
 - `attendance.js`: validates and submits attendance check-ins.

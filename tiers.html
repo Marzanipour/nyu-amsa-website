@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AMSA at NYU Tier System</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=tiers-1" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-brand" href="index.html">
+        <span><strong>AMSA</strong> at NYU</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="index.html">About</a>
+        <a href="membership.html">Membership</a>
+        <a href="events.html">Events</a>
+        <a href="attendance.html">Attendance</a>
+        <a class="is-active" href="tiers.html">Tier System</a>
+      </nav>
+    </header>
+
+    <main class="tier-page">
+      <section class="tier-hero">
+        <div>
+          <p class="section-kicker">Membership ladder</p>
+          <h1>Show up. Get involved. Move up.</h1>
+          <p>
+            Your AMSA rank is based on joining the chapter, participating in
+            events, and—when you are ready—completing the one-time dues.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-link" href="membership.html">Join or submit dues</a>
+            <a class="secondary-link" href="attendance.html">Check in at an event</a>
+          </div>
+        </div>
+        <div class="tier-hero__badge" aria-hidden="true">
+          <span>II</span>
+          <strong>AMSA</strong>
+        </div>
+      </section>
+
+      <section class="tier-steps" aria-label="How the AMSA tier system works">
+        <article>
+          <span>01</span>
+          <h2>Join</h2>
+          <p>Register through the Membership page using your NYU email.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h2>Attend</h2>
+          <p>Check in at three AMSA events using the same NYU email.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h2>Advance</h2>
+          <p>Submit the $25 one-time dues to qualify for Tier II.</p>
+        </article>
+      </section>
+
+      <section class="tier-grid" aria-label="AMSA membership tiers">
+        <article class="tier-card tier-card--one">
+          <div class="tier-card__heading">
+            <div>
+              <p class="section-kicker">Tier I</p>
+              <h2>AMSA Member</h2>
+            </div>
+            <span class="tier-number">I</span>
+          </div>
+          <p class="tier-card__summary">
+            Become an official AMSA member by joining and attending at least
+            three events.
+          </p>
+          <ul>
+            <li>Register through the Membership page</li>
+            <li>Attend at least 3 AMSA events</li>
+            <li>Recognized as an active AMSA member</li>
+            <li>No member-resource access at this tier</li>
+          </ul>
+          <a class="secondary-link tier-card__action" href="membership.html">Start Tier I</a>
+        </article>
+
+        <article class="tier-card tier-card--two">
+          <div class="tier-card__heading">
+            <div>
+              <p class="section-kicker">Tier II</p>
+              <h2>Paid Member</h2>
+            </div>
+            <span class="tier-number">II</span>
+          </div>
+          <p class="tier-card__summary">
+            Unlock Tier II after attending at least three events and having
+            your one-time $25 dues approved.
+          </p>
+          <ul>
+            <li>Complete all Tier I requirements</li>
+            <li>Pay the one-time $25 AMSA dues</li>
+            <li>Opportunity to apply for the AMSA E-Board</li>
+            <li>Access to AMSA-provided ChatGPT resources</li>
+          </ul>
+          <a class="primary-link tier-card__action" href="membership.html">Submit dues for Tier II</a>
+        </article>
+      </section>
+
+      <section class="tier-tracking">
+        <div>
+          <p class="section-kicker">Automatic tracking</p>
+          <h2>Your NYU email connects everything.</h2>
+        </div>
+        <p>
+          Use the same NYU email when joining and checking in. AMSA's Google
+          Sheet automatically combines your membership record, approved dues,
+          and unique events attended to calculate your current tier.
+        </p>
+      </section>
+
+      <section class="tier-cta">
+        <div>
+          <p class="section-kicker">Ready to begin?</p>
+          <h2>Join AMSA and start building your event count.</h2>
+        </div>
+        <a class="primary-link" href="membership.html">Go to Membership</a>
+      </section>
+    </main>
+  </body>
+</html>

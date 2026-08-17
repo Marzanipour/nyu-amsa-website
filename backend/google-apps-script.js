@@ -42,6 +42,8 @@ const MEMBER_SUMMARY_COLUMNS = [
   "Full Name",
   "Payment Status",
   "Events Attended",
+  "Current Tier",
+  "Tier Progress",
   "Last Attendance",
   "Membership Record"
 ];
@@ -118,14 +120,27 @@ function doPost(event) {
     const payload = JSON.parse(event.postData.contents);
     const normalized = normalizePayload(payload);
 
-    if (hasExistingMember(normalized.email)) {
+    const existingMemberRow = findExistingMemberRow(normalized.email);
+    if (existingMemberRow) {
+      if (normalized.paymentSent === "Yes") {
+        updateExistingMemberPayment(existingMemberRow, normalized);
+        notifyAdminForReview(normalized);
+        rebuildMemberSummary(false);
+        return jsonResponse({ ok: true, status: "payment_pending_review", updated: true });
+      }
       return jsonResponse({ ok: true, duplicate: true });
     }
 
     appendPendingMembershipRow(normalized);
-    notifyAdminForReview(normalized);
+    if (normalized.paymentSent === "Yes") {
+      notifyAdminForReview(normalized);
+    }
+    rebuildMemberSummary(false);
 
-    return jsonResponse({ ok: true, status: "pending_review" });
+    return jsonResponse({
+      ok: true,
+      status: normalized.paymentSent === "Yes" ? "pending_review" : "joined"
+    });
   } catch (error) {
     return jsonResponse({ ok: false, error: error.message });
   }
@@ -289,6 +304,7 @@ function recordAttendance(payload) {
       member ? member.paymentStatus : "Not found"
     ]);
     rebuildMemberSummary(false);
+    sendTierTwoCredentialsIfEligible(email);
 
     return {
       ok: true,
@@ -428,11 +444,32 @@ function rebuildMemberSummary(showAlert) {
   const rows = emails.map((email) => {
     const member = members[email];
     const visits = attendance[email];
+    const eventsAttended = visits ? Object.keys(visits.eventIds).length : 0;
+    const paymentStatus = member ? member.paymentStatus : "Not found";
+    const paymentApproved = paymentStatus.toLowerCase() === "approved";
+    let currentTier = "Not yet eligible";
+    let tierProgress;
+
+    if (!member) {
+      tierProgress = "Join AMSA through the Membership page";
+    } else if (eventsAttended < 3) {
+      const remainingEvents = 3 - eventsAttended;
+      tierProgress = `Attend ${remainingEvents} more event${remainingEvents === 1 ? "" : "s"}`;
+    } else if (paymentApproved) {
+      currentTier = "Tier II";
+      tierProgress = "Tier II complete";
+    } else {
+      currentTier = "Tier I";
+      tierProgress = "Submit and receive approval for the $25 dues to reach Tier II";
+    }
+
     return [
       email,
       member ? member.fullName : visits.fullName,
-      member ? member.paymentStatus : "Not found",
-      visits ? Object.keys(visits.eventIds).length : 0,
+      paymentStatus,
+      eventsAttended,
+      currentTier,
+      tierProgress,
       visits ? visits.lastAttendance : "",
       member ? "Yes" : "No"
     ];
@@ -446,7 +483,7 @@ function rebuildMemberSummary(showAlert) {
     .setFontWeight("bold");
   if (rows.length) {
     summarySheet.getRange(2, 1, rows.length, MEMBER_SUMMARY_COLUMNS.length).setValues(rows);
-    summarySheet.getRange(2, 5, rows.length, 1).setNumberFormat("mmm d, yyyy h:mm AM/PM");
+    summarySheet.getRange(2, 7, rows.length, 1).setNumberFormat("mmm d, yyyy h:mm AM/PM");
   }
   summarySheet.setFrozenRows(1);
   summarySheet.autoResizeColumns(1, MEMBER_SUMMARY_COLUMNS.length);
@@ -473,6 +510,7 @@ function normalizePayload(payload) {
   const fullName = String(payload.fullName || "").trim();
   const email = String(payload.email || "").trim().toLowerCase();
   const phone = String(payload.phone || "").trim();
+  const membershipTrack = String(payload.membershipTrack || "free").trim().toLowerCase();
 
   if (!fullName) {
     throw new Error("Full name is required.");
@@ -486,7 +524,7 @@ function normalizePayload(payload) {
     throw new Error("Phone number is required.");
   }
 
-  if (payload.paymentSent !== true) {
+  if (membershipTrack === "paid" && payload.paymentSent !== true) {
     throw new Error("Payment confirmation is required.");
   }
 
@@ -498,9 +536,10 @@ function normalizePayload(payload) {
     fullName,
     email,
     phone,
-    paymentMethod: String(payload.paymentMethod || ""),
+    membershipTrack,
+    paymentMethod: payload.paymentSent === true ? String(payload.paymentMethod || "") : "",
     paymentNote: String(payload.paymentNote || ""),
-    paymentSent: "Yes",
+    paymentSent: payload.paymentSent === true ? "Yes" : "No",
     honestyPolicy: "Yes",
     submittedAt: payload.submittedAt || new Date().toISOString()
   };
@@ -519,7 +558,7 @@ function appendPendingMembershipRow(data) {
     data.paymentNote,
     data.paymentSent,
     data.honestyPolicy,
-    "Pending",
+    data.paymentSent === "Yes" ? "Pending" : "Not Paid",
     "No",
     ""
   ]);
@@ -538,21 +577,14 @@ function sendApprovedCredentials() {
   const values = sheet.getRange(2, 1, lastRow - 1, COLUMNS.length).getValues();
   let sentCount = 0;
 
-  values.forEach((row, index) => {
-    const rowNumber = index + 2;
+  values.forEach((row) => {
     const paymentStatus = String(row[8] || "").trim().toLowerCase();
     const credentialSent = String(row[9] || "").trim().toLowerCase();
 
     if (paymentStatus === "approved" && credentialSent !== "yes") {
-      const data = {
-        fullName: row[1],
-        email: row[2]
-      };
-
-      sendCredentialEmail(data);
-      sheet.getRange(rowNumber, 10).setValue("Yes");
-      sheet.getRange(rowNumber, 11).setValue(new Date());
-      sentCount += 1;
+      if (sendTierTwoCredentialsIfEligible(String(row[2] || "").trim().toLowerCase())) {
+        sentCount += 1;
+      }
     }
   });
 
@@ -586,19 +618,14 @@ function sendCredentialsForApprovedEdit(event) {
   const paymentStatus = String(range.getValue() || "").trim().toLowerCase();
   const credentialSent = String(sheet.getRange(range.getRow(), 10).getValue() || "").trim().toLowerCase();
 
+  rebuildMemberSummary(false);
+
   if (paymentStatus !== "approved" || credentialSent === "yes") {
     return;
   }
 
-  const row = sheet.getRange(range.getRow(), 1, 1, COLUMNS.length).getValues()[0];
-
-  sendCredentialEmail({
-    fullName: row[1],
-    email: row[2]
-  });
-
-  sheet.getRange(range.getRow(), 10).setValue("Yes");
-  sheet.getRange(range.getRow(), 11).setValue(new Date());
+  const email = String(sheet.getRange(range.getRow(), 3).getValue() || "").trim().toLowerCase();
+  sendTierTwoCredentialsIfEligible(email);
 }
 
 function notifyAdminForReview(data) {
@@ -644,17 +671,76 @@ function ensureHeaderRow(sheet) {
   }
 }
 
-function hasExistingMember(email) {
+function findExistingMemberRow(email) {
   const sheet = getMembershipSheet();
   ensureHeaderRow(sheet);
   const lastRow = sheet.getLastRow();
 
   if (lastRow < 2) {
-    return false;
+    return 0;
   }
 
   const emails = sheet.getRange(2, 3, lastRow - 1, 1).getValues().flat();
-  return emails.some((value) => String(value).trim().toLowerCase() === email);
+  const index = emails.findIndex((value) => String(value).trim().toLowerCase() === email);
+  return index === -1 ? 0 : index + 2;
+}
+
+function updateExistingMemberPayment(rowNumber, data) {
+  const sheet = getMembershipSheet();
+  const currentStatus = String(sheet.getRange(rowNumber, 9).getValue() || "").trim().toLowerCase();
+
+  sheet.getRange(rowNumber, 1).setValue(new Date(data.submittedAt));
+  sheet.getRange(rowNumber, 2).setValue(data.fullName);
+  sheet.getRange(rowNumber, 4).setValue(data.phone);
+  sheet.getRange(rowNumber, 5).setValue(data.paymentMethod);
+  sheet.getRange(rowNumber, 6).setValue(data.paymentNote);
+  sheet.getRange(rowNumber, 7).setValue("Yes");
+  sheet.getRange(rowNumber, 8).setValue(data.honestyPolicy);
+
+  if (currentStatus !== "approved") {
+    sheet.getRange(rowNumber, 9).setValue("Pending");
+  }
+}
+
+function sendTierTwoCredentialsIfEligible(email) {
+  const rowNumber = findExistingMemberRow(email);
+  if (!rowNumber || countUniqueEventsForEmail(email) < 3) {
+    return false;
+  }
+
+  const sheet = getMembershipSheet();
+  const row = sheet.getRange(rowNumber, 1, 1, COLUMNS.length).getValues()[0];
+  const paymentStatus = String(row[8] || "").trim().toLowerCase();
+  const credentialSent = String(row[9] || "").trim().toLowerCase();
+
+  if (paymentStatus !== "approved" || credentialSent === "yes") {
+    return false;
+  }
+
+  sendCredentialEmail({
+    fullName: row[1],
+    email: row[2]
+  });
+  sheet.getRange(rowNumber, 10).setValue("Yes");
+  sheet.getRange(rowNumber, 11).setValue(new Date());
+  return true;
+}
+
+function countUniqueEventsForEmail(email) {
+  const sheet = getAttendanceSheet();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return 0;
+  }
+
+  const rows = sheet.getRange(2, 2, lastRow - 1, 4).getValues();
+  const eventIds = {};
+  rows.forEach((row) => {
+    if (String(row[3] || "").trim().toLowerCase() === email) {
+      eventIds[String(row[0] || "")] = true;
+    }
+  });
+  return Object.keys(eventIds).length;
 }
 
 function sendCredentialEmail(data) {
