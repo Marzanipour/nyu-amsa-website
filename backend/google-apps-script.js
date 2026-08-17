@@ -24,7 +24,9 @@ const COLUMNS = [
   "Academic Honesty Agreement",
   "Payment Status",
   "Credential Email Sent",
-  "Credential Email Sent At"
+  "Credential Email Sent At",
+  "Free Membership Email Sent",
+  "Free Membership Email Sent At"
 ];
 
 const ATTENDANCE_COLUMNS = [
@@ -128,12 +130,15 @@ function doPost(event) {
         rebuildMemberSummary(false);
         return jsonResponse({ ok: true, status: "payment_pending_review", updated: true });
       }
-      return jsonResponse({ ok: true, duplicate: true });
+      sendFreeMembershipWelcomeIfNeeded(existingMemberRow);
+      return jsonResponse({ ok: true, duplicate: true, status: "joined" });
     }
 
-    appendPendingMembershipRow(normalized);
+    const newMemberRow = appendPendingMembershipRow(normalized);
     if (normalized.paymentSent === "Yes") {
       notifyAdminForReview(normalized);
+    } else {
+      sendFreeMembershipWelcomeIfNeeded(newMemberRow);
     }
     rebuildMemberSummary(false);
 
@@ -560,8 +565,12 @@ function appendPendingMembershipRow(data) {
     data.honestyPolicy,
     data.paymentSent === "Yes" ? "Pending" : "Not Paid",
     "No",
+    "",
+    "No",
     ""
   ]);
+
+  return sheet.getLastRow();
 }
 
 function sendApprovedCredentials() {
@@ -648,6 +657,51 @@ After confirming the Venmo/Zelle payment, open the Membership sheet, change Paym
   GmailApp.sendEmail(settings.adminEmail, subject, body, {
     replyTo: data.email,
     name: "AMSA Membership Bot"
+  });
+}
+
+function sendFreeMembershipWelcomeIfNeeded(rowNumber) {
+  const sheet = getMembershipSheet();
+  const row = sheet.getRange(rowNumber, 1, 1, COLUMNS.length).getValues()[0];
+  const paymentSent = String(row[6] || "").trim().toLowerCase();
+  const welcomeSent = String(row[11] || "").trim().toLowerCase();
+
+  if (paymentSent === "yes" || welcomeSent === "yes") {
+    return false;
+  }
+
+  sendFreeMembershipWelcomeEmail({
+    fullName: row[1],
+    email: row[2]
+  });
+  sheet.getRange(rowNumber, 12).setValue("Yes");
+  sheet.getRange(rowNumber, 13).setValue(new Date());
+  return true;
+}
+
+function sendFreeMembershipWelcomeEmail(data) {
+  const settings = getEmailSettings();
+  const firstName = String(data.fullName || "").split(/\s+/)[0] || "there";
+  const subject = "Welcome to AMSA at NYU — membership confirmed";
+  const body = `Hello ${firstName},
+
+Your free AMSA at NYU membership is confirmed. No payment review or approval is required for your free membership.
+
+Here is how the membership tiers work:
+
+Tier I — AMSA Member
+Use this same NYU email when checking in at events. After you attend three unique AMSA events, you will reach Tier I and be recognized as an active AMSA member. Tier I does not include access to member resources.
+
+Tier II — Paid Member
+Attend at least three events and submit the one-time $25 dues through the Membership page. Only the paid Tier II submission requires AMSA approval. Once your dues are approved and the event requirement is complete, you can receive AMSA-provided ChatGPT resource access and become eligible for E-Board opportunities.
+
+We are glad to have you in AMSA at NYU!
+
+AMSA at NYU`;
+
+  GmailApp.sendEmail(data.email, subject, body, {
+    replyTo: settings.replyToEmail,
+    name: "AMSA at NYU"
   });
 }
 

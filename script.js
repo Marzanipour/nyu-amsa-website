@@ -113,7 +113,7 @@ form.addEventListener("submit", async (event) => {
     setStatus(
       payload.membershipTrack === "paid"
         ? "Submitted. AMSA will review your dues for Tier II eligibility."
-        : "You joined AMSA. Attend three events to qualify for Tier I.",
+        : "You joined AMSA. Check your NYU inbox for confirmation, then attend three events to qualify for Tier I.",
       "success"
     );
   } catch (error) {
