@@ -843,6 +843,8 @@ Use this same NYU email when checking in at events. After you attend three uniqu
 Tier II — Paid Member
 Attend at least three events and submit the one-time $25 dues through the Membership page. Only the paid Tier II submission requires AMSA approval. Once your dues are approved and the event requirement is complete, you can receive AMSA-provided ChatGPT resource access and become eligible for E-Board opportunities.
 
+Important login rule: Whenever you access any AMSA-provided resource, always choose “Sign in with Google.” Do not enter the shared AMSA email and password directly into another service's standard login form.
+
 We are glad to have you in AMSA at NYU!
 
 AMSA at NYU`;
@@ -989,7 +991,7 @@ Your Credential:
 Email: ${settings.resourceEmail}
 Password: ${settings.resourcePassword}
 
-Important: To access the resources, sign into a new Google account using the provided credentials. Once signed in, use the shortcuts set up in this profile to navigate to the tools you need. Please do not use the email to log into platforms directly. Instead, always access resources through the Google profile by selecting "Sign in with Google" where applicable.
+Important login rule: First, sign into a new Google account using the provided credentials. Whenever you access any AMSA-provided resource, always choose "Sign in with Google." Do not enter the shared AMSA email and password directly into another service's standard login form. Once signed in, use the shortcuts set up in the Google profile to navigate to the tools you need.
 
 Thank you for your cooperation. We look forward to seeing you at the event and to your continued participation!
 
