@@ -68,14 +68,22 @@ membershipTrackInputs.forEach((input) => {
 updateMembershipPath();
 
 async function submitToGoogleScript(payload) {
-  await fetch(config.googleScriptUrl, {
-    method: "POST",
-    mode: "no-cors",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8"
-    },
-    body: JSON.stringify(payload)
-  });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 40000);
+
+  try {
+    await fetch(config.googleScriptUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 form.addEventListener("submit", async (event) => {
@@ -118,7 +126,12 @@ form.addEventListener("submit", async (event) => {
     );
   } catch (error) {
     console.error(error);
-    setStatus("Something went wrong. Please try again or contact AMSA.", "error");
+    setStatus(
+      error.name === "AbortError"
+        ? "The signup service is busy. Your submission may still be processing; wait a moment before trying again."
+        : "Something went wrong. Please try again or contact AMSA.",
+      "error"
+    );
   } finally {
     button.disabled = false;
   }

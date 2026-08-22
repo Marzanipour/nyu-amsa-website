@@ -16,6 +16,7 @@ This is a simple membership access website for AMSA at NYU.
 - Maintains a `Member Summary` tab with payment status and unique events attended.
 - Calculates Tier I and Tier II automatically from membership, attendance, and approved dues.
 - Sends free members an immediate confirmation email; only paid Tier II submissions require approval.
+- Handles simultaneous room check-ins with short write locks, incremental summaries, and duplicate-safe retries.
 
 ## Important payment note
 

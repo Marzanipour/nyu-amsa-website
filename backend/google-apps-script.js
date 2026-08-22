@@ -121,31 +121,47 @@ function doPost(event) {
   try {
     const payload = JSON.parse(event.postData.contents);
     const normalized = normalizePayload(payload);
+    const lock = LockService.getScriptLock();
+    let memberRow;
+    let shouldSendWelcome = false;
+    let shouldNotifyAdmin = false;
+    let result;
 
-    const existingMemberRow = findExistingMemberRow(normalized.email);
-    if (existingMemberRow) {
-      if (normalized.paymentSent === "Yes") {
-        updateExistingMemberPayment(existingMemberRow, normalized);
-        notifyAdminForReview(normalized);
-        rebuildMemberSummary(false);
-        return jsonResponse({ ok: true, status: "payment_pending_review", updated: true });
+    lock.waitLock(30000);
+    try {
+      const existingMemberRow = findExistingMemberRow(normalized.email);
+      if (existingMemberRow) {
+        memberRow = existingMemberRow;
+        if (normalized.paymentSent === "Yes") {
+          shouldNotifyAdmin = updateExistingMemberPayment(existingMemberRow, normalized);
+          updateMemberSummaryForEmail(normalized.email, normalized.fullName);
+          result = { ok: true, status: "payment_pending_review", updated: true };
+        } else {
+          shouldSendWelcome = true;
+          result = { ok: true, duplicate: true, status: "joined" };
+        }
+      } else {
+        memberRow = appendPendingMembershipRow(normalized);
+        shouldNotifyAdmin = normalized.paymentSent === "Yes";
+        shouldSendWelcome = !shouldNotifyAdmin;
+        updateMemberSummaryForEmail(normalized.email, normalized.fullName);
+        result = {
+          ok: true,
+          status: shouldNotifyAdmin ? "pending_review" : "joined"
+        };
       }
-      sendFreeMembershipWelcomeIfNeeded(existingMemberRow);
-      return jsonResponse({ ok: true, duplicate: true, status: "joined" });
+    } finally {
+      lock.releaseLock();
     }
 
-    const newMemberRow = appendPendingMembershipRow(normalized);
-    if (normalized.paymentSent === "Yes") {
+    if (shouldNotifyAdmin) {
       notifyAdminForReview(normalized);
-    } else {
-      sendFreeMembershipWelcomeIfNeeded(newMemberRow);
     }
-    rebuildMemberSummary(false);
+    if (shouldSendWelcome) {
+      sendFreeMembershipWelcomeIfNeeded(memberRow);
+    }
 
-    return jsonResponse({
-      ok: true,
-      status: normalized.paymentSent === "Yes" ? "pending_review" : "joined"
-    });
+    return jsonResponse(result);
   } catch (error) {
     return jsonResponse({ ok: false, error: error.message });
   }
@@ -229,7 +245,6 @@ function openAttendanceCheckIn() {
   );
   updateAttendanceControlSheet(eventData);
   getAttendanceSheet();
-  rebuildMemberSummary(false);
 
   ui.alert(
     `Attendance is open for ${eventName}.\n\nRoom code: ${code}\n\nThe code expires in ${durationMinutes} minute(s). Display the Attendance Control sheet in the room.`
@@ -285,7 +300,10 @@ function recordAttendance(payload) {
   }
 
   const lock = LockService.getScriptLock();
-  lock.waitLock(10000);
+  let result;
+  let eventsAttended = 0;
+
+  lock.waitLock(30000);
   try {
     const eventData = getActiveAttendanceEvent(true);
     if (eventCode !== eventData.code) {
@@ -293,34 +311,47 @@ function recordAttendance(payload) {
     }
 
     const attendanceSheet = getAttendanceSheet();
-    const existing = findAttendanceRow(attendanceSheet, eventData.id, email);
-    if (existing) {
-      return { ok: true, duplicate: true, eventName: eventData.name };
+    const attendanceStats = getAttendanceStatsForEmail(email, attendanceSheet);
+    if (attendanceStats.eventIds[eventData.id]) {
+      result = { ok: true, duplicate: true, eventName: eventData.name };
+    } else {
+      const member = findMembershipRecord(email);
+      const recordedAt = new Date();
+      attendanceSheet.appendRow([
+        recordedAt,
+        eventData.id,
+        eventData.name,
+        fullName,
+        email,
+        member ? "Yes" : "No",
+        member ? member.paymentStatus : "Not found"
+      ]);
+
+      eventsAttended = Object.keys(attendanceStats.eventIds).length + 1;
+      writeMemberSummaryRow(
+        email,
+        member ? member.fullName : fullName,
+        member,
+        eventsAttended,
+        recordedAt
+      );
+
+      result = {
+        ok: true,
+        duplicate: false,
+        eventName: eventData.name,
+        membershipFound: Boolean(member),
+        paymentStatus: member ? member.paymentStatus : "Not found"
+      };
     }
-
-    const member = findMembershipRecord(email);
-    attendanceSheet.appendRow([
-      new Date(),
-      eventData.id,
-      eventData.name,
-      fullName,
-      email,
-      member ? "Yes" : "No",
-      member ? member.paymentStatus : "Not found"
-    ]);
-    rebuildMemberSummary(false);
-    sendTierTwoCredentialsIfEligible(email);
-
-    return {
-      ok: true,
-      duplicate: false,
-      eventName: eventData.name,
-      membershipFound: Boolean(member),
-      paymentStatus: member ? member.paymentStatus : "Not found"
-    };
   } finally {
     lock.releaseLock();
   }
+
+  if (!result.duplicate && eventsAttended >= 3) {
+    sendTierTwoCredentialsIfEligible(email, eventsAttended);
+  }
+  return result;
 }
 
 function getAttendanceSheet() {
@@ -331,16 +362,31 @@ function getAttendanceSheet() {
   return sheet;
 }
 
-function findAttendanceRow(sheet, eventId, email) {
-  const lastRow = sheet.getLastRow();
+function getAttendanceStatsForEmail(email, sheet) {
+  const attendanceSheet = sheet || getAttendanceSheet();
+  const stats = {
+    eventIds: {},
+    lastAttendance: null
+  };
+  const lastRow = attendanceSheet.getLastRow();
   if (lastRow < 2) {
-    return false;
+    return stats;
   }
 
-  const rows = sheet.getRange(2, 2, lastRow - 1, 4).getValues();
-  return rows.some((row) => {
-    return String(row[0]) === eventId && String(row[3]).trim().toLowerCase() === email;
+  const rows = attendanceSheet
+    .getRange(2, 1, lastRow - 1, ATTENDANCE_COLUMNS.length)
+    .getValues();
+  rows.forEach((row) => {
+    if (String(row[4] || "").trim().toLowerCase() !== email) {
+      return;
+    }
+    stats.eventIds[String(row[1] || "")] = true;
+    const timestamp = row[0] instanceof Date ? row[0] : new Date(row[0]);
+    if (!stats.lastAttendance || timestamp > stats.lastAttendance) {
+      stats.lastAttendance = timestamp;
+    }
   });
+  return stats;
 }
 
 function findMembershipRecord(email) {
@@ -351,17 +397,24 @@ function findMembershipRecord(email) {
     return null;
   }
 
-  const rows = sheet.getRange(2, 1, lastRow - 1, COLUMNS.length).getValues();
-  for (const row of rows) {
-    if (String(row[2]).trim().toLowerCase() === email) {
-      return {
-        fullName: String(row[1] || "").trim(),
-        email,
-        paymentStatus: String(row[8] || "Pending").trim() || "Pending"
-      };
-    }
+  const match = sheet
+    .getRange(2, 3, lastRow - 1, 1)
+    .createTextFinder(email)
+    .matchEntireCell(true)
+    .matchCase(false)
+    .findNext();
+  if (!match) {
+    return null;
   }
-  return null;
+
+  const rowNumber = match.getRow();
+  const row = sheet.getRange(rowNumber, 1, 1, COLUMNS.length).getValues()[0];
+  return {
+    rowNumber,
+    fullName: String(row[1] || "").trim(),
+    email,
+    paymentStatus: String(row[8] || "Pending").trim() || "Pending"
+  };
 }
 
 function updateAttendanceControlSheet(eventData) {
@@ -498,17 +551,84 @@ function rebuildMemberSummary(showAlert) {
   }
 }
 
-function ensureSpecificHeaderRow(sheet, columns) {
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(columns);
+function updateMemberSummaryForEmail(email, fallbackFullName) {
+  const member = findMembershipRecord(email);
+  const attendanceStats = getAttendanceStatsForEmail(email);
+  writeMemberSummaryRow(
+    email,
+    member ? member.fullName : fallbackFullName,
+    member,
+    Object.keys(attendanceStats.eventIds).length,
+    attendanceStats.lastAttendance
+  );
+}
+
+function writeMemberSummaryRow(email, fullName, member, eventsAttended, lastAttendance) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const summarySheet = spreadsheet.getSheetByName(SETTINGS.memberSummarySheetName) ||
+    spreadsheet.insertSheet(SETTINGS.memberSummarySheetName);
+  ensureSpecificHeaderRow(summarySheet, MEMBER_SUMMARY_COLUMNS);
+
+  const paymentStatus = member ? member.paymentStatus : "Not found";
+  const paymentApproved = paymentStatus.toLowerCase() === "approved";
+  let currentTier = "Not yet eligible";
+  let tierProgress;
+
+  if (!member) {
+    tierProgress = "Join AMSA through the Membership page";
+  } else if (eventsAttended < 3) {
+    const remainingEvents = 3 - eventsAttended;
+    tierProgress = `Attend ${remainingEvents} more event${remainingEvents === 1 ? "" : "s"}`;
+  } else if (paymentApproved) {
+    currentTier = "Tier II";
+    tierProgress = "Tier II complete";
   } else {
-    sheet.getRange(1, 1, 1, columns.length).setValues([columns]);
+    currentTier = "Tier I";
+    tierProgress = "Submit and receive approval for the $25 dues to reach Tier II";
   }
-  sheet.getRange(1, 1, 1, columns.length)
-    .setBackground("#57068c")
-    .setFontColor("#ffffff")
-    .setFontWeight("bold");
-  sheet.setFrozenRows(1);
+
+  const summaryLastRow = summarySheet.getLastRow();
+  let rowNumber = summaryLastRow + 1;
+  if (summaryLastRow >= 2) {
+    const match = summarySheet
+      .getRange(2, 1, summaryLastRow - 1, 1)
+      .createTextFinder(email)
+      .matchEntireCell(true)
+      .matchCase(false)
+      .findNext();
+    if (match) {
+      rowNumber = match.getRow();
+    }
+  }
+
+  summarySheet.getRange(rowNumber, 1, 1, MEMBER_SUMMARY_COLUMNS.length).setValues([[
+    email,
+    fullName,
+    paymentStatus,
+    eventsAttended,
+    currentTier,
+    tierProgress,
+    lastAttendance || "",
+    member ? "Yes" : "No"
+  ]]);
+  summarySheet.getRange(rowNumber, 7).setNumberFormat("mmm d, yyyy h:mm AM/PM");
+}
+
+function ensureSpecificHeaderRow(sheet, columns) {
+  let needsHeader = sheet.getLastRow() === 0;
+  if (!needsHeader) {
+    const headers = sheet.getRange(1, 1, 1, columns.length).getValues()[0];
+    needsHeader = !columns.every((column, index) => headers[index] === column);
+  }
+
+  if (needsHeader) {
+    sheet.getRange(1, 1, 1, columns.length).setValues([columns]);
+    sheet.getRange(1, 1, 1, columns.length)
+      .setBackground("#57068c")
+      .setFontColor("#ffffff")
+      .setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
 }
 
 function normalizePayload(payload) {
@@ -627,13 +747,16 @@ function sendCredentialsForApprovedEdit(event) {
   const paymentStatus = String(range.getValue() || "").trim().toLowerCase();
   const credentialSent = String(sheet.getRange(range.getRow(), 10).getValue() || "").trim().toLowerCase();
 
-  rebuildMemberSummary(false);
-
   if (paymentStatus !== "approved" || credentialSent === "yes") {
+    const unchangedEmail = String(sheet.getRange(range.getRow(), 3).getValue() || "").trim().toLowerCase();
+    if (unchangedEmail) {
+      updateMemberSummaryForEmail(unchangedEmail, "");
+    }
     return;
   }
 
   const email = String(sheet.getRange(range.getRow(), 3).getValue() || "").trim().toLowerCase();
+  updateMemberSummaryForEmail(email, "");
   sendTierTwoCredentialsIfEligible(email);
 }
 
@@ -661,22 +784,47 @@ After confirming the Venmo/Zelle payment, open the Membership sheet, change Paym
 }
 
 function sendFreeMembershipWelcomeIfNeeded(rowNumber) {
-  const sheet = getMembershipSheet();
-  const row = sheet.getRange(rowNumber, 1, 1, COLUMNS.length).getValues()[0];
-  const paymentSent = String(row[6] || "").trim().toLowerCase();
-  const welcomeSent = String(row[11] || "").trim().toLowerCase();
+  const lock = LockService.getScriptLock();
+  let emailData;
 
-  if (paymentSent === "yes" || welcomeSent === "yes") {
-    return false;
+  lock.waitLock(30000);
+  try {
+    const sheet = getMembershipSheet();
+    const row = sheet.getRange(rowNumber, 1, 1, COLUMNS.length).getValues()[0];
+    const paymentSent = String(row[6] || "").trim().toLowerCase();
+    const welcomeSent = String(row[11] || "").trim().toLowerCase();
+
+    if (paymentSent === "yes" || welcomeSent === "yes" || welcomeSent === "sending") {
+      return false;
+    }
+
+    sheet.getRange(rowNumber, 12).setValue("Sending");
+    emailData = {
+      fullName: row[1],
+      email: row[2]
+    };
+  } finally {
+    lock.releaseLock();
   }
 
-  sendFreeMembershipWelcomeEmail({
-    fullName: row[1],
-    email: row[2]
-  });
-  sheet.getRange(rowNumber, 12).setValue("Yes");
-  sheet.getRange(rowNumber, 13).setValue(new Date());
-  return true;
+  try {
+    sendFreeMembershipWelcomeEmail(emailData);
+    setFreeMembershipEmailState(rowNumber, "Yes", new Date());
+    return true;
+  } catch (error) {
+    setFreeMembershipEmailState(rowNumber, "No", "");
+    throw error;
+  }
+}
+
+function setFreeMembershipEmailState(rowNumber, status, sentAt) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    getMembershipSheet().getRange(rowNumber, 12, 1, 2).setValues([[status, sentAt]]);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function sendFreeMembershipWelcomeEmail(data) {
@@ -734,67 +882,96 @@ function findExistingMemberRow(email) {
     return 0;
   }
 
-  const emails = sheet.getRange(2, 3, lastRow - 1, 1).getValues().flat();
-  const index = emails.findIndex((value) => String(value).trim().toLowerCase() === email);
-  return index === -1 ? 0 : index + 2;
+  const match = sheet
+    .getRange(2, 3, lastRow - 1, 1)
+    .createTextFinder(email)
+    .matchEntireCell(true)
+    .matchCase(false)
+    .findNext();
+  return match ? match.getRow() : 0;
 }
 
 function updateExistingMemberPayment(rowNumber, data) {
   const sheet = getMembershipSheet();
-  const currentStatus = String(sheet.getRange(rowNumber, 9).getValue() || "").trim().toLowerCase();
+  const row = sheet.getRange(rowNumber, 1, 1, COLUMNS.length).getValues()[0];
+  const currentStatus = String(row[8] || "").trim().toLowerCase();
+  const paymentWasAlreadySubmitted = String(row[6] || "").trim().toLowerCase() === "yes" &&
+    (currentStatus === "pending" || currentStatus === "approved");
 
-  sheet.getRange(rowNumber, 1).setValue(new Date(data.submittedAt));
-  sheet.getRange(rowNumber, 2).setValue(data.fullName);
-  sheet.getRange(rowNumber, 4).setValue(data.phone);
-  sheet.getRange(rowNumber, 5).setValue(data.paymentMethod);
-  sheet.getRange(rowNumber, 6).setValue(data.paymentNote);
-  sheet.getRange(rowNumber, 7).setValue("Yes");
-  sheet.getRange(rowNumber, 8).setValue(data.honestyPolicy);
+  row[0] = new Date(data.submittedAt);
+  row[1] = data.fullName;
+  row[3] = data.phone;
+  row[4] = data.paymentMethod;
+  row[5] = data.paymentNote;
+  row[6] = "Yes";
+  row[7] = data.honestyPolicy;
 
   if (currentStatus !== "approved") {
-    sheet.getRange(rowNumber, 9).setValue("Pending");
+    row[8] = "Pending";
+  }
+  sheet.getRange(rowNumber, 1, 1, COLUMNS.length).setValues([row]);
+  return !paymentWasAlreadySubmitted;
+}
+
+function sendTierTwoCredentialsIfEligible(email, knownEventCount) {
+  const eventsAttended = Number.isFinite(knownEventCount)
+    ? knownEventCount
+    : countUniqueEventsForEmail(email);
+  if (eventsAttended < 3) {
+    return false;
+  }
+
+  const lock = LockService.getScriptLock();
+  let rowNumber;
+  let emailData;
+
+  lock.waitLock(30000);
+  try {
+    rowNumber = findExistingMemberRow(email);
+    if (!rowNumber) {
+      return false;
+    }
+
+    const sheet = getMembershipSheet();
+    const row = sheet.getRange(rowNumber, 1, 1, COLUMNS.length).getValues()[0];
+    const paymentStatus = String(row[8] || "").trim().toLowerCase();
+    const credentialSent = String(row[9] || "").trim().toLowerCase();
+
+    if (paymentStatus !== "approved" || credentialSent === "yes" || credentialSent === "sending") {
+      return false;
+    }
+
+    sheet.getRange(rowNumber, 10).setValue("Sending");
+    emailData = {
+      fullName: row[1],
+      email: row[2]
+    };
+  } finally {
+    lock.releaseLock();
+  }
+
+  try {
+    sendCredentialEmail(emailData);
+    setCredentialEmailState(rowNumber, "Yes", new Date());
+    return true;
+  } catch (error) {
+    setCredentialEmailState(rowNumber, "No", "");
+    throw error;
   }
 }
 
-function sendTierTwoCredentialsIfEligible(email) {
-  const rowNumber = findExistingMemberRow(email);
-  if (!rowNumber || countUniqueEventsForEmail(email) < 3) {
-    return false;
+function setCredentialEmailState(rowNumber, status, sentAt) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    getMembershipSheet().getRange(rowNumber, 10, 1, 2).setValues([[status, sentAt]]);
+  } finally {
+    lock.releaseLock();
   }
-
-  const sheet = getMembershipSheet();
-  const row = sheet.getRange(rowNumber, 1, 1, COLUMNS.length).getValues()[0];
-  const paymentStatus = String(row[8] || "").trim().toLowerCase();
-  const credentialSent = String(row[9] || "").trim().toLowerCase();
-
-  if (paymentStatus !== "approved" || credentialSent === "yes") {
-    return false;
-  }
-
-  sendCredentialEmail({
-    fullName: row[1],
-    email: row[2]
-  });
-  sheet.getRange(rowNumber, 10).setValue("Yes");
-  sheet.getRange(rowNumber, 11).setValue(new Date());
-  return true;
 }
 
 function countUniqueEventsForEmail(email) {
-  const sheet = getAttendanceSheet();
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) {
-    return 0;
-  }
-
-  const rows = sheet.getRange(2, 2, lastRow - 1, 4).getValues();
-  const eventIds = {};
-  rows.forEach((row) => {
-    if (String(row[3] || "").trim().toLowerCase() === email) {
-      eventIds[String(row[0] || "")] = true;
-    }
-  });
-  return Object.keys(eventIds).length;
+  return Object.keys(getAttendanceStatsForEmail(email).eventIds).length;
 }
 
 function sendCredentialEmail(data) {

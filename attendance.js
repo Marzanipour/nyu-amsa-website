@@ -13,9 +13,9 @@ function setAttendanceStatus(message, type = "") {
   attendanceStatus.className = `status${type ? ` is-${type}` : ""}`;
 }
 
-async function submitAttendance(payload) {
+async function requestAttendance(payload) {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 15000);
+  const timeout = window.setTimeout(() => controller.abort(), 35000);
   const params = new URLSearchParams({
     action: "attendance",
     fullName: payload.fullName,
@@ -45,6 +45,38 @@ async function submitAttendance(payload) {
   } finally {
     window.clearTimeout(timeout);
   }
+}
+
+function isRetryableAttendanceError(error) {
+  return error.name === "AbortError" ||
+    /busy|lock|temporarily|timed out|could not be reached/i.test(error.message || "");
+}
+
+async function submitAttendance(payload) {
+  let lastError;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await requestAttendance(payload);
+      if (response && !response.ok && /busy|lock|temporarily/i.test(response.error || "")) {
+        const busyError = new Error("Attendance is busy. Retrying your check-in...");
+        busyError.name = "BusyError";
+        throw busyError;
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableAttendanceError(error) || attempt === 1) {
+        throw error;
+      }
+      setAttendanceStatus("The room is checking in at once. Retrying securely...");
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 500 + Math.floor(Math.random() * 700));
+      });
+    }
+  }
+
+  throw lastError;
 }
 
 attendanceForm.addEventListener("submit", async (event) => {
